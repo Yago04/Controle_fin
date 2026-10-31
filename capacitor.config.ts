@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'FinControl Life OS',
   webDir: 'out',
   server: {
-    // Permite que o app no iPhone (via Xcode) conecte ao servidor local na rede Wi-Fi
-    url: 'http://192.168.0.5:3000',
-    cleartext: true,
+    // Conectado diretamente à Vercel de produção (funciona em qualquer lugar do mundo no 4G/5G/Wi-Fi)
+    url: 'https://controle-fin-beta.vercel.app',
+    cleartext: false,
   },
   ios: {
     contentInset: 'always',
