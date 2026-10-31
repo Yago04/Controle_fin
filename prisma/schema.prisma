@@ -1,0 +1,759 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  CHECKING       // Conta corrente
+  SAVINGS        // Poupança
+  WALLET         // Carteira / Dinheiro físico
+  DIGITAL        // Conta digital / Fintech
+  INVESTMENT     // Corretora / Investimento
+  OTHER          // Outros
+}
+
+enum TransactionType {
+  INCOME         // Receita
+  EXPENSE        // Despesa
+  TRANSFER       // Transferência entre contas
+}
+
+enum TransactionStatus {
+  COMPLETED      // Concluído / Pago
+  PENDING        // Pendente / A vencer
+  CANCELLED      // Cancelado
+}
+
+enum DebtStatus {
+  ACTIVE         // Em dia / Ativa
+  OVERDUE        // Atrasada
+  NEGOTIATED     // Negociada / Acordo
+  PAID           // Quitada
+}
+
+enum DebtType {
+  CREDIT_CARD    // Dívida de cartão
+  LOAN           // Empréstimo
+  FINANCING      // Financiamento (veículo/imóvel)
+  PERSONAL       // Pessoa física / Amigo / Familiar
+  BANK           // Cheque especial / Banco
+  STORE          // Loja / Carnê
+  TAX            // Tributário / Impostos
+  OVERDUE_BILL   // Conta atrasada
+  SETTLEMENT     // Acordo judicial / extrajudicial
+  OTHER          // Outros
+}
+
+enum RecurrencePeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+enum InvoiceStatus {
+  OPEN           // Aberta
+  CLOSED         // Fechada
+  PAID           // Paga
+  OVERDUE        // Atrasada
+}
+
+enum BillStatus {
+  PENDING        // Pendente / A pagar
+  PAID           // Paga
+  OVERDUE        // Vencida / Atrasada
+  CANCELLED      // Cancelada
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  DANGER
+  SUCCESS
+}
+
+// Novos Enums do Life OS
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum PomodoroMode {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+  STOPWATCH
+}
+
+enum CalendarEventType {
+  PERSONAL
+  WORK
+  HEALTH
+  FINANCE
+  WORKOUT
+  STUDY
+  REMINDER
+}
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  LEGS
+  GLUTES
+  ABS
+  CARDIO
+  FULL_BODY
+}
+
+enum WorkoutSetType {
+  WARMUP
+  WORKING
+  DROPSET
+  FAILURE
+}
+
+enum GoalHorizon {
+  SHORT_TERM     // Curto Prazo (até 6 meses / 1 ano)
+  MEDIUM_TERM    // Médio Prazo (1 a 3 anos / 5 anos)
+  LONG_TERM      // Longo Prazo (5+ anos / aposentadoria / independência)
+}
+
+enum GoalCategory {
+  FINANCIAL      // Dinheiro, Reserva, Investimentos, Patrimônio
+  CAREER         // Trabalho, Negócios, Estudos
+  HEALTH         // Físico, Peso, Esportes, Saúde
+  PERSONAL       // Viagens, Bens, Casa, Estilo de Vida
+  OTHER
+}
+
+// Configurações Globais do Sistema Pessoal (sem login)
+model AppSetting {
+  id                    String                 @id @default("default")
+  monthlyIncome         Decimal                @default(0.00) @db.Decimal(15, 2)
+  emergencyFundGoal     Decimal                @default(0.00) @db.Decimal(15, 2)
+  currency              String                 @default("BRL")
+  dailyFocusGoalMinutes Int                    @default(100)
+  pomodoroFocusMinutes  Int                    @default(25)
+  pomodoroShortBreak    Int                    @default(5)
+  pomodoroLongBreak     Int                    @default(15)
+  weeklyWorkoutGoal     Int                    @default(4)
+  dailyWaterGoalMl      Int                    @default(3000)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@map("app_settings")
+}
+
+model Account {
+  id                    String                 @id @default(uuid())
+  name                  String                 // ex: Nubank, Inter, Dinheiro Carteira
+  bankName              String?                // ex: Nubank, Banco Inter
+  type                  AccountType            @default(CHECKING)
+  initialBalance        Decimal                @default(0.00) @db.Decimal(15, 2)
+  currentBalance        Decimal                @default(0.00) @db.Decimal(15, 2)
+  color                 String                 @default("#3b82f6") // Hex color
+  isActive              Boolean                @default(true)
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  transactions          Transaction[]          @relation("AccountTransactions")
+  destinationTransfers  Transaction[]          @relation("DestinationAccountTransactions")
+
+  @@map("accounts")
+}
+
+model Category {
+  id                    String                 @id @default(uuid())
+  name                  String                 // Moradia, Alimentação, Transporte, etc.
+  type                  TransactionType        @default(EXPENSE)
+  icon                  String?                // Lucide icon name
+  color                 String                 @default("#64748b")
+  isDefault             Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  transactions          Transaction[]
+  budgets               Budget[]
+  recurringTransactions RecurringTransaction[]
+  bills                 Bill[]
+  rules                 Rule[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id                    String                 @id @default(uuid())
+  accountId             String
+  destinationAccountId  String?                // Para transferências (Dívida zero patrimonial)
+  categoryId            String?
+  description           String
+  amount                Decimal                @db.Decimal(15, 2)
+  type                  TransactionType
+  status                TransactionStatus      @default(COMPLETED)
+  date                  DateTime
+  dueDate               DateTime?
+  paymentMethod         String?                // PIX, Boleto, Débito, Cartão, Dinheiro
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  account               Account                @relation("AccountTransactions", fields: [accountId], references: [id], onDelete: Cascade)
+  destinationAccount    Account?               @relation("DestinationAccountTransactions", fields: [destinationAccountId], references: [id])
+  category              Category?              @relation(fields: [categoryId], references: [id])
+  debtInstallment       DebtInstallment?
+  bill                  Bill?
+  creditCardInvoice     CreditCardInvoice?
+  linkedNotes           Note[]
+
+  @@index([date])
+  @@index([accountId])
+  @@index([categoryId])
+  @@map("transactions")
+}
+
+model CreditCard {
+  id                    String                 @id @default(uuid())
+  name                  String                 // ex: Nubank Ultravioleta
+  bank                  String?
+  brand                 String?                // Mastercard, Visa, Elo
+  limit                 Decimal                @db.Decimal(15, 2)
+  closingDay            Int                    // Dia do fechamento da fatura
+  dueDay                Int                    // Dia do vencimento
+  color                 String                 @default("#8b5cf6")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  invoices              CreditCardInvoice[]
+  purchases             CreditCardPurchase[]
+
+  @@map("credit_cards")
+}
+
+model CreditCardInvoice {
+  id                    String                 @id @default(uuid())
+  creditCardId          String
+  month                 Int                    // 1 a 12
+  year                  Int                    // ex: 2026
+  closingDate           DateTime
+  dueDate               DateTime
+  totalAmount           Decimal                @default(0.00) @db.Decimal(15, 2)
+  status                InvoiceStatus          @default(OPEN)
+  paidAt                DateTime?
+  transactionId         String?                @unique
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  creditCard            CreditCard             @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  transaction           Transaction?           @relation(fields: [transactionId], references: [id])
+
+  @@index([creditCardId, year, month])
+  @@map("credit_card_invoices")
+}
+
+model CreditCardPurchase {
+  id                    String                 @id @default(uuid())
+  creditCardId          String
+  description           String
+  totalAmount           Decimal                @db.Decimal(15, 2)
+  totalInstallments     Int                    @default(1)
+  purchaseDate          DateTime
+  categoryName          String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  creditCard            CreditCard             @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+
+  @@index([creditCardId])
+  @@map("credit_card_purchases")
+}
+
+model Debt {
+  id                    String                 @id @default(uuid())
+  creditor              String                 // Nome do credor / banco / loja
+  description           String
+  originalAmount        Decimal                @db.Decimal(15, 2)
+  currentBalance        Decimal                @db.Decimal(15, 2)
+  interestRateMonthly   Decimal                @default(0.00) @db.Decimal(6, 3) // Taxa de juros % a.m.
+  type                  DebtType               @default(LOAN)
+  status                DebtStatus             @default(ACTIVE)
+  startDate             DateTime
+  dueDate               DateTime?
+  totalInstallments     Int                    @default(1)
+  paidInstallmentsCount Int                    @default(0)
+  installmentAmount     Decimal                @db.Decimal(15, 2)
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  installments          DebtInstallment[]
+  linkedNotes           Note[]
+
+  @@index([status])
+  @@map("debts")
+}
+
+model DebtInstallment {
+  id                    String                 @id @default(uuid())
+  debtId                String
+  installmentNumber     Int                    // ex: 1, 2, 3...
+  amount                Decimal                @db.Decimal(15, 2)
+  dueDate               DateTime
+  status                TransactionStatus      @default(PENDING)
+  paidAt                DateTime?
+  interestAmount        Decimal                @default(0.00) @db.Decimal(15, 2)
+  penaltyAmount         Decimal                @default(0.00) @db.Decimal(15, 2)
+  discountAmount        Decimal                @default(0.00) @db.Decimal(15, 2)
+  transactionId         String?                @unique
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  debt                  Debt                   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  transaction           Transaction?           @relation(fields: [transactionId], references: [id])
+
+  @@index([debtId, dueDate])
+  @@map("debt_installments")
+}
+
+model Bill {
+  id                    String                 @id @default(uuid())
+  description           String                 // Conta de luz, internet, etc.
+  amount                Decimal                @db.Decimal(15, 2)
+  dueDate               DateTime
+  categoryId            String?
+  status                BillStatus             @default(PENDING)
+  paidAt                DateTime?
+  transactionId         String?                @unique
+  rentId                String?
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  category              Category?              @relation(fields: [categoryId], references: [id])
+  transaction           Transaction?           @relation(fields: [transactionId], references: [id])
+  rent                  Rent?                  @relation(fields: [rentId], references: [id])
+
+  @@index([dueDate, status])
+  @@map("bills")
+}
+
+model Rent {
+  id                    String                 @id @default(uuid())
+  propertyAddress       String
+  landlordName          String?
+  monthlyAmount         Decimal                @db.Decimal(15, 2)
+  dueDay                Int                    // Dia do vencimento
+  adjustmentIndex       String?                // IPCA, IGP-M
+  startDate             DateTime
+  endDate               DateTime?
+  contractUrl           String?
+  notes                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  bills                 Bill[]
+
+  @@map("rents")
+}
+
+model RecurringTransaction {
+  id                    String                 @id @default(uuid())
+  categoryId            String?
+  description           String                 // Netflix, Spotify, Academia, Aluguel
+  amount                Decimal                @db.Decimal(15, 2)
+  type                  TransactionType        @default(EXPENSE)
+  period                RecurrencePeriod       @default(MONTHLY)
+  dayOfMonth            Int?
+  startDate             DateTime
+  endDate               DateTime?
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  category              Category?              @relation(fields: [categoryId], references: [id])
+
+  @@index([isActive])
+  @@map("recurring_transactions")
+}
+
+model Budget {
+  id                    String                 @id @default(uuid())
+  categoryId            String
+  month                 Int                    // 1 a 12
+  year                  Int                    // ex: 2026
+  limitAmount           Decimal                @db.Decimal(15, 2)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  category              Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, month, year])
+  @@map("budgets")
+}
+
+model FinancialGoal {
+  id                    String                 @id @default(uuid())
+  title                 String                 // Reserva de emergência, Viagem, etc.
+  description           String?
+  targetAmount          Decimal                @default(0.00) @db.Decimal(15, 2)
+  currentAmount         Decimal                @default(0.00) @db.Decimal(15, 2)
+  targetDate            DateTime?
+  horizon               GoalHorizon            @default(SHORT_TERM)
+  category              GoalCategory           @default(FINANCIAL)
+  color                 String                 @default("#10b981")
+  isCompleted           Boolean                @default(false)
+  completedAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  @@index([horizon])
+  @@index([isCompleted])
+  @@map("financial_goals")
+}
+
+model Rule {
+  id                    String                 @id @default(uuid())
+  pattern               String                 // ex: "IFOOD", "UBER", "NETFLIX"
+  categoryId            String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  category              Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("rules")
+}
+
+model ImportBatch {
+  id                    String                 @id @default(uuid())
+  filename              String
+  fileType              String                 // "CSV" | "OFX"
+  totalRows             Int                    @default(0)
+  importedAt            DateTime               @default(now())
+
+  items                 ImportItem[]
+
+  @@map("import_batches")
+}
+
+model ImportItem {
+  id                    String                 @id @default(uuid())
+  batchId               String
+  date                  DateTime
+  description           String
+  amount                Decimal                @db.Decimal(15, 2)
+  suggestedCategoryId   String?
+  isDuplicate           Boolean                @default(false)
+  importedTransactionId String?
+
+  batch                 ImportBatch            @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("import_items")
+}
+
+model Notification {
+  id                    String                 @id @default(uuid())
+  title                 String
+  message               String
+  type                  NotificationType       @default(INFO)
+  read                  Boolean                @default(false)
+  link                  String?
+  createdAt             DateTime               @default(now())
+
+  @@index([read])
+  @@map("notifications")
+}
+
+// ==========================================
+// 1.3. MÓDULO POMODORO & TAREFAS
+// ==========================================
+
+model Project {
+  id                    String                 @id @default(uuid())
+  name                  String
+  color                 String                 @default("#f59e0b")
+  icon                  String?
+  isArchived            Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  tasks                 Task[]
+  sessions              PomodoroSession[]
+  notes                 Note[]
+
+  @@map("projects")
+}
+
+model Task {
+  id                    String                 @id @default(uuid())
+  title                 String
+  description           String?
+  status                TaskStatus             @default(TODO)
+  priority              TaskPriority           @default(MEDIUM)
+  dueDate               DateTime?
+  scheduledStart        DateTime?
+  estimatedPomodoros    Int                    @default(1)
+  completedPomodoros    Int                    @default(0)
+  projectId             String?
+  noteId                String?
+  completedAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  project               Project?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  note                  Note?                  @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  sessions              PomodoroSession[]
+
+  @@index([status, dueDate])
+  @@index([projectId])
+  @@map("tasks")
+}
+
+model PomodoroSession {
+  id                    String                 @id @default(uuid())
+  mode                  PomodoroMode           @default(FOCUS)
+  durationMinutes       Int
+  startedAt             DateTime
+  endedAt               DateTime
+  taskId                String?
+  projectId             String?
+  noteId                String?
+  notes                 String?
+  createdAt             DateTime               @default(now())
+
+  task                  Task?                  @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  project               Project?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  note                  Note?                  @relation(fields: [noteId], references: [id], onDelete: SetNull)
+
+  @@index([startedAt])
+  @@index([taskId])
+  @@map("pomodoro_sessions")
+}
+
+// ==========================================
+// 1.4. MÓDULO DE NOTAS (SEGUNDO CÉREBRO)
+// ==========================================
+
+model NoteFolder {
+  id                    String                 @id @default(uuid())
+  name                  String
+  icon                  String?
+  color                 String                 @default("#3b82f6")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  notes                 Note[]
+
+  @@map("note_folders")
+}
+
+model Note {
+  id                    String                 @id @default(uuid())
+  title                 String
+  content               String                 @db.Text
+  tags                  String[]               @default([])
+  folderId              String?
+  isPinned              Boolean                @default(false)
+  isFavorite            Boolean                @default(false)
+  isDailyNote           Boolean                @default(false)
+  dailyDate             DateTime?
+  projectId             String?
+  transactionId         String?
+  debtId                String?
+  workoutRoutineId      String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
+
+  folder                NoteFolder?            @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  project               Project?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  transaction           Transaction?           @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  debt                  Debt?                  @relation(fields: [debtId], references: [id], onDelete: SetNull)
+  workoutRoutine        WorkoutRoutine?        @relation(fields: [workoutRoutineId], references: [id], onDelete: SetNull)
+  tasks                 Task[]
+  pomodoroSessions      PomodoroSession[]
+  calendarEvents        CalendarEvent[]
+
+  @@index([folderId])
+  @@index([isDailyNote, dailyDate])
+  @@map("notes")
+}
+
+// ==========================================
+// 1.5. MÓDULO DE CALENDÁRIO UNIFICADO
+// ==========================================
+
+model CalendarEvent {
+  id                    String                 @id @default(uuid())
+  title                 String
+  description           String?
+  startDate             DateTime
+  endDate               DateTime?
+  allDay                Boolean                @default(false)
+  type                  CalendarEventType      @default(PERSONAL)
+  color                 String                 @default("#3b82f6")
+  location              String?
+  isCompleted           Boolean                @default(false)
+  noteId                String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  note                  Note?                  @relation(fields: [noteId], references: [id], onDelete: SetNull)
+
+  @@index([startDate])
+  @@map("calendar_events")
+}
+
+// ==========================================
+// 1.6. MÓDULO DE ACADEMIA, TREINOS & SAÚDE
+// ==========================================
+
+model Exercise {
+  id                    String                 @id @default(uuid())
+  name                  String
+  muscleGroup           MuscleGroup
+  equipment             String?                // Barra, Halter, Máquina, Polia, Peso Corporal
+  defaultRestSeconds    Int                    @default(90)
+  instructions          String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  routineExercises      WorkoutRoutineExercise[]
+  setLogs               WorkoutSetLog[]
+
+  @@index([muscleGroup])
+  @@map("exercises")
+}
+
+model WorkoutRoutine {
+  id                    String                 @id @default(uuid())
+  name                  String                 // ex: "Treino A — Peito, Ombro e Tríceps"
+  code                  String?                // "A", "B", "C"
+  description           String?
+  color                 String                 @default("#06b6d4")
+  suggestedDays         String[]               @default([]) // ex: ["MON", "THU"]
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  exercises             WorkoutRoutineExercise[]
+  sessions              WorkoutSession[]
+  notes                 Note[]
+
+  @@map("workout_routines")
+}
+
+model WorkoutRoutineExercise {
+  id                    String                 @id @default(uuid())
+  routineId             String
+  exerciseId            String
+  order                 Int
+  targetSets            Int                    @default(3)
+  targetReps            String                 @default("8-12")
+  targetWeightKg        Decimal?               @db.Decimal(8, 2)
+  restSeconds           Int                    @default(90)
+  notes                 String?
+
+  routine               WorkoutRoutine         @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise              Exercise               @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([routineId, order])
+  @@map("workout_routine_exercises")
+}
+
+model WorkoutSession {
+  id                    String                 @id @default(uuid())
+  routineId             String?
+  title                 String
+  startedAt             DateTime
+  endedAt               DateTime?
+  durationMinutes       Int?
+  totalVolumeKg         Decimal                @default(0) @db.Decimal(12, 2)
+  energyLevel           Int?                   // 1 a 5
+  notes                 String?
+  createdAt             DateTime               @default(now())
+
+  routine               WorkoutRoutine?        @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  setLogs               WorkoutSetLog[]
+
+  @@index([startedAt])
+  @@index([routineId])
+  @@map("workout_sessions")
+}
+
+model WorkoutSetLog {
+  id                    String                 @id @default(uuid())
+  sessionId             String
+  exerciseId            String
+  setNumber             Int
+  setType               WorkoutSetType         @default(WORKING)
+  weightKg              Decimal                @db.Decimal(8, 2)
+  reps                  Int
+  rpe                   Decimal?               @db.Decimal(4, 1)
+  isPR                  Boolean                @default(false)
+  completed             Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+
+  session               WorkoutSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise              Exercise               @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([exerciseId])
+  @@map("workout_set_logs")
+}
+
+model BodyMetric {
+  id                    String                 @id @default(uuid())
+  date                  DateTime               @default(now())
+  weightKg              Decimal                @db.Decimal(6, 2)
+  bodyFatPct            Decimal?               @db.Decimal(5, 2)
+  chestCm               Decimal?               @db.Decimal(6, 2)
+  waistCm               Decimal?               @db.Decimal(6, 2)
+  armCm                 Decimal?               @db.Decimal(6, 2)
+  thighCm               Decimal?               @db.Decimal(6, 2)
+  notes                 String?
+  createdAt             DateTime               @default(now())
+
+  @@index([date])
+  @@map("body_metrics")
+}
+
+model DailyHealthLog {
+  id                    String                 @id @default(uuid())
+  dateKey               String                 @unique // formato "YYYY-MM-DD"
+  waterMl               Int                    @default(0)
+  creatineChecked       Boolean                @default(false)
+  wheyChecked           Boolean                @default(false)
+  sleepHours            Decimal?               @db.Decimal(4, 1)
+  sleepQuality          Int?
+  cardioMinutes         Int                    @default(0)
+  notes                 String?
+  updatedAt             DateTime               @updatedAt
+
+  @@map("daily_health_logs")
+}

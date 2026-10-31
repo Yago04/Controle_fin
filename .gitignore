@@ -1,0 +1,46 @@
+# Node dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Next.js build output
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files
+.env*.local
+.env
+
+# Prisma
+/prisma/migrations
+
+# Vitest
+/coverage
+
+# Android Build & Local Config
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+android/.idea
+*.apk
+*.aab
+
+# iOS Build & CocoaPods
+ios/App/Pods
+ios/App/Podfile.lock
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata
+ios/App/App.xcodeproj/xcuserdata
+ios/App/App.xcworkspace/xcuserdata

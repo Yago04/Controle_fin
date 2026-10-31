@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+
+  /* Modo Claro: Branco Puro & Azul */
+  --background: 210 33% 98.5%;
+  --foreground: 222 47% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 214 32% 95%;
+  --secondary-foreground: 221 50% 20%;
+
+  --muted: 214 32% 95.5%;
+  --muted-foreground: 215 18% 42%;
+
+  --accent: 214 95% 94%;
+  --accent-foreground: 221.2 83.2% 45%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 214 32% 89%;
+  --input: 214 32% 88%;
+  --ring: 221.2 83.2% 53.3%;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Modo Dark: Meio Preto / Grafite Carbono (Zero Azul) */
+  --background: 0 0% 5%;
+  --foreground: 0 0% 96%;
+
+  --card: 0 0% 8.5%;
+  --card-foreground: 0 0% 96%;
+
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 96%;
+
+  --primary: 0 0% 96%;
+  --primary-foreground: 0 0% 7%;
+
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 0 0% 94%;
+
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 63%;
+
+  --accent: 0 0% 15%;
+  --accent-foreground: 0 0% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 0 0% 15%;
+  --input: 0 0% 15%;
+  --ring: 0 0% 75%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Custom modern scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Otimizações para iOS Safari & Mac UI/UX */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Suporte fino a Safe Area Insets do iPhone (Dynamic Island & Home Indicator) */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+

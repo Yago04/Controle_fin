@@ -1,0 +1,172 @@
+# PROMPT DE EXECUÇÃO PARA A IA — ATUALIZAÇÃO PARA "LIFE OS" (FINANÇAS + POMODORO + NOTAS + CALENDÁRIO + ACADEMIA + MAC/IPHONE)
+
+Atue como um Engenheiro de Software Fullstack Sênior especialista em **Next.js 14 (App Router), TypeScript, Tailwind CSS, Prisma ORM (PostgreSQL) e Capacitor (iOS/Mac)**.
+
+Você está trabalhando em um projeto **já existente** de Controle Financeiro Pessoal (`FinControl`).
+Sua missão é **aplicar uma atualização completa e incremental** para transformar este sistema em um **Personal Life OS** integrando **4 novos módulos completos (Pomodoro & Tarefas, Notas/Segundo Cérebro, Calendário Unificado 360° e Academia/Saúde)** ao módulo **Financeiro** existente, garantindo funcionamento 100% real no banco de dados e otimizado para **Mac (Desktop)** e **iPhone (Mobile/PWA/Capacitor)**.
+
+---
+
+## ⚠️ REGRAS INEGOCIÁVEIS DE EXECUÇÃO
+
+1. **NÃO QUEBRE E NÃO APAGUE NADA DO SISTEMA FINANCEIRO ATUAL:**
+   * Preserve todas as tabelas, cálculos (`domain/calculations/FinancialCalculator.ts`), repositórios (`repositories/*`), serviços (`services/FinancialOverviewService.ts`), APIs (`app/api/*`) e modais financeiros existentes.
+2. **NÃO CRIE SISTEMA DE LOGIN/AUTENTICAÇÃO:**
+   * O sistema é 100% pessoal e de usuário único. Ao abrir, entra direto na aplicação.
+3. **ZERO DADOS FICTÍCIOS (MOCKS ESTÁTICOS) NA INTERFACE:**
+   * Todo botão, formulário, timer, check de série de academia, nota ou evento de calendário **DEVE** salvar e ler do banco PostgreSQL via Prisma e API Routes.
+4. **PRECISÃO NUMÉRICA:**
+   * Continue usando `Decimal` no Prisma para valores monetários e cargas/pesos (`Decimal(15, 2)` ou `Decimal(8, 2)`).
+5. **CONEXÃO ENTRE OS MÓDULOS:**
+   * Os módulos não podem ser ilhas isoladas. O Calendário deve exibir dados financeiros + tarefas + treinos + eventos. As Notas devem poder se vincular a transações, dívidas, tarefas e treinos. O Dashboard deve ter uma visão "Meu Dia" integrando tudo.
+
+---
+
+## PASSO 1: ATUALIZAÇÃO DO `prisma/schema.prisma`
+
+Mantenha todos os models e enums atuais (`Account`, `Category`, `Transaction`, `CreditCard`, `CreditCardInvoice`, `CreditCardPurchase`, `Debt`, `DebtInstallment`, `Bill`, `Rent`, `RecurringTransaction`, `Budget`, `FinancialGoal`, `Rule`, `ImportBatch`, `ImportItem`, `Notification`, `AppSetting`) e **adicione**:
+
+### 1.1. Campos adicionais em `AppSetting`
+* `dailyFocusGoalMinutes Int @default(100)` (ex: 4 pomodoros de 25m)
+* `pomodoroFocusMinutes Int @default(25)`
+* `pomodoroShortBreak Int @default(5)`
+* `pomodoroLongBreak Int @default(15)`
+* `weeklyWorkoutGoal Int @default(4)`
+* `dailyWaterGoalMl Int @default(3000)`
+
+### 1.2. Novos Enums
+* `TaskStatus`: `TODO`, `IN_PROGRESS`, `DONE`, `ARCHIVED`
+* `TaskPriority`: `LOW`, `MEDIUM`, `HIGH`, `URGENT`
+* `PomodoroMode`: `FOCUS`, `SHORT_BREAK`, `LONG_BREAK`, `STOPWATCH`
+* `CalendarEventType`: `PERSONAL`, `WORK`, `HEALTH`, `FINANCE`, `WORKOUT`, `STUDY`, `REMINDER`
+* `MuscleGroup`: `CHEST`, `BACK`, `SHOULDERS`, `BICEPS`, `TRICEPS`, `LEGS`, `GLUTES`, `ABS`, `CARDIO`, `FULL_BODY`
+* `WorkoutSetType`: `WARMUP`, `WORKING`, `DROPSET`, `FAILURE`
+
+### 1.3. Módulo Pomodoro & Tarefas
+* **`Project`**:
+  * `id`, `name`, `color` (`#f59e0b`), `icon`, `isArchived`, `createdAt`, `updatedAt`
+  * Relações: `tasks Task[]`, `sessions PomodoroSession[]`, `notes Note[]`
+* **`Task`**:
+  * `id`, `title`, `description`, `status` (`TaskStatus`), `priority` (`TaskPriority`), `dueDate DateTime?`, `scheduledStart DateTime?`, `estimatedPomodoros Int @default(1)`, `completedPomodoros Int @default(0)`, `projectId String?`, `noteId String?`, `completedAt DateTime?`, `createdAt`, `updatedAt`
+  * Relações com `Project`, `Note` e `PomodoroSession[]`
+* **`PomodoroSession`**:
+  * `id`, `mode` (`PomodoroMode`), `durationMinutes Int`, `startedAt DateTime`, `endedAt DateTime`, `taskId String?`, `projectId String?`, `noteId String?`, `notes String?`, `createdAt`
+
+### 1.4. Módulo de Notas (Segundo Cérebro)
+* **`NoteFolder`**:
+  * `id`, `name`, `icon`, `color`, `createdAt`, `updatedAt`, `notes Note[]`
+* **`Note`**:
+  * `id`, `title`, `content` (`@db.Text` em Markdown), `tags String[]`, `folderId String?`, `isPinned Boolean @default(false)`, `isFavorite Boolean @default(false)`, `isDailyNote Boolean @default(false)`, `dailyDate DateTime?`, `projectId String?`, `transactionId String?`, `debtId String?`, `workoutRoutineId String?`, `createdAt`, `updatedAt`, `deletedAt DateTime?`
+
+### 1.5. Módulo de Calendário Unificado
+* **`CalendarEvent`**:
+  * `id`, `title`, `description`, `startDate DateTime`, `endDate DateTime?`, `allDay Boolean @default(false)`, `type` (`CalendarEventType`), `color String @default("#3b82f6")`, `location String?`, `isCompleted Boolean @default(false)`, `noteId String?`, `createdAt`, `updatedAt`
+
+### 1.6. Módulo de Academia, Treinos & Saúde
+* **`Exercise`**:
+  * `id`, `name`, `muscleGroup` (`MuscleGroup`), `equipment String?` (Barra, Halter, Máquina, Polia, Peso Corporal), `defaultRestSeconds Int @default(90)`, `instructions String?`, `createdAt`, `updatedAt`
+* **`WorkoutRoutine`** (Fichas A, B, C, etc.):
+  * `id`, `name` (ex: "Treino A — Peito, Ombro e Tríceps"), `code String?` ("A", "B", "C"), `description String?`, `color String @default("#06b6d4")`, `suggestedDays String[]` (ex: `["MON", "THU"]`), `isActive Boolean @default(true)`, `createdAt`, `updatedAt`
+  * Relações: `exercises WorkoutRoutineExercise[]`, `sessions WorkoutSession[]`, `notes Note[]`
+* **`WorkoutRoutineExercise`**:
+  * `id`, `routineId`, `exerciseId`, `order Int`, `targetSets Int @default(3)`, `targetReps String @default("8-12")`, `targetWeightKg Decimal? @db.Decimal(8, 2)`, `restSeconds Int @default(90)`, `notes String?`
+* **`WorkoutSession`** (Treino executado):
+  * `id`, `routineId String?`, `title String`, `startedAt DateTime`, `endedAt DateTime?`, `durationMinutes Int?`, `totalVolumeKg Decimal @default(0) @db.Decimal(12, 2)`, `energyLevel Int?` (1 a 5), `notes String?`, `createdAt`
+  * Relações: `routine WorkoutRoutine?`, `setLogs WorkoutSetLog[]`
+* **`WorkoutSetLog`** (Série individual registrada):
+  * `id`, `sessionId`, `exerciseId`, `setNumber Int`, `setType` (`WorkoutSetType` @default(WORKING)), `weightKg Decimal @db.Decimal(8, 2)`, `reps Int`, `rpe Decimal? @db.Decimal(4, 1)`, `isPR Boolean @default(false)`, `completed Boolean @default(true)`, `createdAt`
+* **`BodyMetric`** (Medidas e Peso Corporal):
+  * `id`, `date DateTime @default(now())`, `weightKg Decimal @db.Decimal(6, 2)`, `bodyFatPct Decimal? @db.Decimal(5, 2)`, `chestCm Decimal? @db.Decimal(6, 2)`, `waistCm Decimal? @db.Decimal(6, 2)`, `armCm Decimal? @db.Decimal(6, 2)`, `thighCm Decimal? @db.Decimal(6, 2)`, `notes String?`, `createdAt`
+* **`DailyHealthLog`** (Hábitos diários):
+  * `id`, `dateKey String @unique` (formato `"YYYY-MM-DD"`), `waterMl Int @default(0)`, `creatineChecked Boolean @default(false)`, `wheyChecked Boolean @default(false)`, `sleepHours Decimal? @db.Decimal(4, 1)`, `sleepQuality Int?`, `cardioMinutes Int @default(0)`, `notes String?`, `updatedAt`
+
+---
+
+## PASSO 2: ATUALIZAR `prisma/seed.ts`
+
+Expanda o seed existente (usando `upsert` para não duplicar dados) adicionando:
+1. **Pastas de Notas Iniciais:** `Finanças & Planejamento`, `Trabalho & Estudos`, `Academia & Dieta`, `Diário Pessoal`.
+2. **Projetos Iniciais de Foco:** `Trabalho Principal`, `Estudos & Carreira`, `Organização Pessoal`.
+3. **Biblioteca de Exercícios Completa:** Pelo menos 20 exercícios reais divididos por `CHEST`, `BACK`, `LEGS`, `SHOULDERS`, `BICEPS`, `TRICEPS`, `ABS`, `CARDIO`.
+4. **3 Fichas de Treino prontas (`WorkoutRoutine`):**
+   * **Treino A — Push (Peito, Ombro e Tríceps)**
+   * **Treino B — Pull (Costas, Trapézio e Bíceps)**
+   * **Treino C — Legs (Pernas Completo & Core)**
+   Com os respectivos exercícios vinculados (`WorkoutRoutineExercise`).
+
+---
+
+## PASSO 3: CRIAR AS ROTAS DE API (`app/api/*`)
+
+Crie endpoints REST completos, tipados e validados com Zod para:
+1. **`app/api/pomodoro/route.ts` & `app/api/tasks/route.ts` (`[id]/route.ts`):**
+   * Listar/Criar/Atualizar/Concluir tarefas (`Task`), listar/criar `Project`.
+   * Registrar sessão de foco (`PomodoroSession`) e incrementar automaticamente `completedPomodoros` na tarefa vinculada.
+   * Retornar estatísticas: minutos focados hoje, na semana, no mês, streak de dias seguidos e distribuição por projeto.
+2. **`app/api/notes/route.ts` & `app/api/notes/[id]/route.ts`:**
+   * CRUD completo de notas e pastas (`NoteFolder`).
+   * Filtro por busca (`q`), `folderId`, `tag`, `isPinned`, `isFavorite` e endpoint/ação rápida para abrir ou criar a **Daily Note de Hoje** (`isDailyNote: true` para a data atual, já pré-preenchida com resumo de gastos, tarefas e treino do dia).
+3. **`app/api/calendar/route.ts`:**
+   * Endpoint unificado que recebe `month` e `year` e retorna em uma única estrutura cronológica todos os itens do período:
+     * `Bill` (Contas a pagar)
+     * `Rent` (Aluguel)
+     * `DebtInstallment` (Parcelas de dívidas)
+     * `CreditCardInvoice` (Faturas de cartão)
+     * `RecurringTransaction` (Salário e despesas fixas)
+     * `Task` (Tarefas com `dueDate`)
+     * `PomodoroSession` (Resumo de foco do dia)
+     * `WorkoutSession` (Treinos realizados no dia)
+     * `CalendarEvent` (Compromissos pessoais criados no calendário)
+   * Suporte a `POST` / `PATCH` / `DELETE` para `CalendarEvent`.
+4. **`app/api/gym/route.ts`, `app/api/gym/sessions/route.ts` & `app/api/gym/health/route.ts`:**
+   * Listar/Criar/Editar fichas (`WorkoutRoutine`) e exercícios (`Exercise`).
+   * **Iniciar e Finalizar Treino (`WorkoutSession`):**
+     * Ao buscar uma ficha para treinar, retornar os pesos e repetições da **última sessão daquele exercício** para comparação em tempo real ("Anterior: 28kg x 10").
+     * Ao salvar as séries (`WorkoutSetLog`), calcular automaticamente o `totalVolumeKg` ($\sum \text{peso} \times \text{reps}$ das séries concluídas) e detectar se bateu Recorde Pessoal (`isPR = true` se a carga máxima ou 1RM estimado superar o histórico do exercício).
+   * Registrar e atualizar `BodyMetric` (peso corporal e medidas) e `DailyHealthLog` (`+250ml` / `+500ml` de água, check de creatina, whey, horas de sono).
+   * Calcular o indicador **"Investimento em Saúde & Custo por Treino"**: cruzar transações/recorrentes da categoria `Saúde` ou `Academia` do mês atual com o número de `WorkoutSession` concluídas no mês.
+5. **Atualizar `app/api/backup/route.ts`:**
+   * Incluir na exportação e importação JSON todas as novas tabelas (`Project`, `Task`, `PomodoroSession`, `NoteFolder`, `Note`, `CalendarEvent`, `Exercise`, `WorkoutRoutine`, `WorkoutRoutineExercise`, `WorkoutSession`, `WorkoutSetLog`, `BodyMetric`, `DailyHealthLog`).
+
+---
+
+## PASSO 4: COMPONENTES GLOBAIS E LAYOUT MULTI-DISPOSITIVO (MAC + IPHONE)
+
+Atualize `components/layout/Sidebar.tsx`, `components/layout/BottomNav.tsx`, `components/layout/Header.tsx` e `app/page.tsx` para suportar a navegação unificada:
+
+### 4.1. Navegação Principal
+* **Abas/Seções Principais:**
+  1. `⚡ Meu Dia (Command Center)` — Visão 360° de hoje (Resumo Financeiro + Dinheiro Livre + Timer/Tarefas de Hoje + Treino do Dia & Água/Creatina + Agenda do Dia)
+  2. `💰 Finanças` — Todo o painel financeiro atual preservado (Contas, Transações, Dívidas, Simulador "Posso Comprar?", Importação CSV/OFX, Backup)
+  3. `🍅 Foco & Pomodoro` — Timer Pomodoro completo (Foco, Pausa Curta, Pausa Longa, Cronômetro Livre), Lista de Tarefas/Projetos com estimativa de `🍅` e gráficos de produtividade
+  4. `📝 Notas` — Sidebar de pastas/tags, busca rápida, botão "Nota de Hoje" e Editor Markdown com preview, checklists clicáveis e vínculo com Transações/Dívidas/Tarefas/Treinos
+  5. `📅 Calendário 360°` — Grade mensal + Agenda diária lateral com filtros por camada (Finanças, Eventos, Tarefas, Academia) e criação rápida de eventos
+  6. `🏋️ Academia & Saúde` — Abas internas para:
+     * **Treinar Agora / Minhas Fichas (A, B, C):** Modo de execução ao vivo otimizado para celular, tabela de séries (`Anterior | Peso kg | Reps | ✓`), **Timer de Descanso Automático** (60s/90s/120s com `+15s`/`-15s`) e detector de PR 🏆
+     * **Histórico & Evolução de Cargas:** Histórico de treinos realizados, tonelagem total e recordes por exercício
+     * **Corpo & Hábitos Diários:** Tracker de Água (`+250ml`, `+500ml`), Check de Creatina/Whey, Registro de Peso Corporal e Medidas
+
+### 4.2. Mini-Player Pomodoro Flutuante (Persistente)
+* Crie um contexto global (`PomodoroContext`) para que, quando o timer Pomodoro estiver rodando, o usuário possa navegar livremente entre Finanças, Notas, Calendário e Academia sem perder a contagem regressiva.
+* Exiba uma pílula flutuante discreta no topo/rodapé quando o usuário estiver fora da aba de Pomodoro, mostrando o tempo restante (`24:12`), a tarefa ativa e botões de Pausar/Concluir.
+* O cálculo do tempo restante deve usar diferença de timestamp (`Date.now()`) para nunca atrasar se a aba do Mac ficar em background ou se o iPhone bloquear a tela.
+
+### 4.3. Command Palette Global (`Cmd + K` no Mac / Botão `+` Rápido no iPhone)
+* Crie um modal de comando rápido acionado por `Cmd + K` (ou `Ctrl + K`) e por um botão no Header para executar ações em 2 segundos de qualquer tela:
+  * Nova Transação (Receita / Despesa / Transferência)
+  * Iniciar Pomodoro de 25 min
+  * Nova Tarefa
+  * Nova Nota Rápida / Abrir Nota de Hoje
+  * Iniciar Treino (Ficha A / B / C)
+  * Beber +500ml de Água / Marcar Creatina Tomada
+  * Novo Evento no Calendário
+
+---
+
+## PASSO 5: VALIDAÇÃO E ENTREGA
+
+Ao implementar:
+1. Rode `npx prisma generate` e `npx prisma db push` (ou crie a migration) para sincronizar o banco.
+2. Rode o seed (`npm run db:seed`) se necessário para garantir as fichas de treino, exercícios, categorias e pastas iniciais.
+3. Verifique se `npm run build` ou `npx tsc --noEmit` passa sem nenhum erro de TypeScript.
+4. Garanta que o layout seja impecável tanto em telas grandes (MacBook/Desktop) quanto em telas verticais (iPhone com `safe-area-inset-bottom` na BottomNav).
