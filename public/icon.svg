@@ -1,18 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#0f766e" />
+    <!-- Deep OLED Black Background with subtle royal blue vignette -->
+    <radialGradient id="bgGradient" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#0a1222" />
+      <stop offset="50%" stop-color="#04070e" />
+      <stop offset="100%" stop-color="#000205" />
+    </radialGradient>
+
+    <!-- Electric Cyan to Royal Blue primary gradient -->
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="40%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#2563eb" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.25" />
+
+    <!-- Vibrant Cyan Highlight -->
+    <linearGradient id="cyanHighlight" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+
+    <!-- Deep sapphire secondary gradient -->
+    <linearGradient id="sapphireGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="60%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- Ambient Glow Filter -->
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="40" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="auraFilter" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="64" />
     </filter>
   </defs>
-  <rect width="512" height="512" rx="128" fill="url(#bg)" />
-  <g filter="url(#shadow)" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Trending arrow and wallet shield -->
-    <path d="M128 352 L224 256 L296 328 L384 192" />
-    <polyline points="312 192 384 192 384 264" />
-    <circle cx="256" cy="256" r="180" stroke-width="24" stroke-opacity="0.3" />
+
+  <!-- Canvas Background -->
+  <rect width="1024" height="1024" fill="url(#bgGradient)" />
+
+  <!-- Ambient Light Aura in center -->
+  <ellipse cx="512" cy="512" rx="300" ry="300" fill="#0ea5e9" opacity="0.16" filter="url(#auraFilter)" />
+
+  <!-- Subtle Minimalist Outer Orbit Ring -->
+  <circle cx="512" cy="512" r="390" fill="none" stroke="#1e293b" stroke-width="4" stroke-opacity="0.6" />
+  <circle cx="512" cy="512" r="390" fill="none" stroke="url(#primaryGrad)" stroke-width="4" stroke-dasharray="140 700" stroke-linecap="round" />
+
+  <!-- Inner Concentric Guide Ring -->
+  <circle cx="512" cy="512" r="290" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-opacity="0.2" stroke-dasharray="6 14" />
+
+  <!-- Center Minimalist Master Emblem: The LifeControll Monogram -->
+  <g filter="url(#softGlow)">
+    <!-- 'C' Arc (Control & Shield) - Outer Sweeping Arm -->
+    <path
+      d="M 640 330
+         C 580 250, 410 250, 330 360
+         C 240 480, 240 620, 340 710
+         C 430 790, 590 790, 660 690"
+      fill="none"
+      stroke="url(#sapphireGrad)"
+      stroke-width="58"
+      stroke-linecap="round"
+    />
+
+    <!-- 'L' Vector (Life, Growth, Foundation) - Overlapping crisp dynamic path -->
+    <path
+      d="M 430 310
+         L 430 640
+         C 430 660, 440 670, 460 670
+         L 670 670"
+      fill="none"
+      stroke="url(#cyanHighlight)"
+      stroke-width="58"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- Dynamic Focal Pulse Point (Precision life tracker) -->
+    <circle cx="670" cy="330" r="24" fill="#00f2fe" />
+    <circle cx="670" cy="330" r="10" fill="#ffffff" />
+    <circle cx="670" cy="330" r="38" fill="none" stroke="#38bdf8" stroke-width="3" stroke-opacity="0.6" />
   </g>
 </svg>

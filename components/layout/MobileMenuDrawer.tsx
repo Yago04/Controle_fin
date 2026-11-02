@@ -23,6 +23,7 @@ import {
   Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LifeControllLogo } from '@/components/ui/LifeControllLogo';
 
 interface MobileMenuDrawerProps {
   isOpen: boolean;
@@ -143,15 +144,7 @@ export function MobileMenuDrawer({
 
         {/* Header do Drawer */}
         <div className="flex items-center justify-between pb-3 border-b border-border/70">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center font-bold">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-foreground">Personal Life OS 360°</h3>
-              <p className="text-[11px] text-muted-foreground">Todos os Módulos & Ferramentas</p>
-            </div>
-          </div>
+          <LifeControllLogo size="md" showText={true} />
           <button
             onClick={onClose}
             className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all"

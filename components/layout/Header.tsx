@@ -132,7 +132,7 @@ export function Header({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="hidden sm:inline text-xs font-semibold text-muted-foreground/80">
-                  FinControl /
+                  LifeControll /
                 </span>
                 <h1 className="text-sm sm:text-base font-bold text-foreground truncate">
                   <span className="sm:hidden">{currentInfo.shortTitle}</span>

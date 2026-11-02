@@ -26,6 +26,7 @@ import { NotesModuleView } from '@/components/notes/NotesModuleView';
 import { CalendarModuleView } from '@/components/calendar/CalendarModuleView';
 import { GymModuleView } from '@/components/gym/GymModuleView';
 import { GoalsModuleView } from '@/components/goals/GoalsModuleView';
+import { SplashScreen } from '@/components/layout/SplashScreen';
 import { Button } from '@/components/ui/Button';
 import { RefreshCw, Upload, DownloadCloud, PlusCircle, AlertCircle } from 'lucide-react';
 
@@ -118,14 +119,7 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-foreground space-y-4">
-        <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-medium text-muted-foreground">
-          Carregando seu Personal Life OS 360°...
-        </p>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   if (error || !data) {
@@ -357,6 +351,9 @@ export default function DashboardPage() {
           onClose={() => setIsBackupOpen(false)}
           onRestored={fetchDashboardData}
         />
+
+        {/* Animação de Entrada Cinematográfica Apple Style */}
+        <SplashScreen />
       </div>
     </PomodoroProvider>
   );

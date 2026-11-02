@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FinControl — Sistema Financeiro Pessoal',
-  description: 'Controle absoluto de saldo, contas, cartões, dívidas e planejamento financeiro pessoal.',
+  title: 'LifeControll — Personal Life OS',
+  description: 'Controle absoluto de saldo, contas, cartões, treino, foco e planejamento pessoal.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'FinControl',
+    title: 'LifeControll',
   },
   icons: {
     icon: '/icon.svg',

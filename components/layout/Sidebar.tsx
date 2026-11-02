@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePomodoro } from '@/components/pomodoro/PomodoroContext';
+import { LifeControllLogo } from '@/components/ui/LifeControllLogo';
 
 interface SidebarProps {
   activeSection?: string;
@@ -95,18 +96,8 @@ export function Sidebar({
   return (
     <aside className="hidden md:flex w-64 border-r border-border/70 bg-card/65 backdrop-blur-2xl flex-col h-screen sticky top-0 select-none shrink-0 transition-colors">
       {/* Brand Logo - Apple App Header Style */}
-      <div className="h-16 flex items-center px-5 border-b border-border/70 gap-3">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-primary/80 text-primary-foreground flex items-center justify-center shadow-md shadow-primary/25">
-          <TrendingUp className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <span className="font-bold text-sm tracking-tight text-foreground block truncate">
-            FinControl OS
-          </span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
-            Personal Life OS 360°
-          </span>
-        </div>
+      <div className="h-16 flex items-center px-4 border-b border-border/70">
+        <LifeControllLogo size="md" showText={true} />
       </div>
 
       {/* Atalho Command Palette Cmd + K no Mac */}
